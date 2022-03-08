@@ -7,8 +7,12 @@ import classnames from 'classnames';
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useMemo, useRef } from '@wordpress/element';
-import { useEntityBlockEditor, store as coreStore } from '@wordpress/core-data';
+import { useMemo, useRef, useEffect } from '@wordpress/element';
+import {
+	useEntityBlockEditor,
+	useEntityId,
+	store as coreStore,
+} from '@wordpress/core-data';
 import {
 	BlockList,
 	BlockInspector,
@@ -19,12 +23,14 @@ import {
 	store as blockEditorStore,
 	privateApis as blockEditorPrivateApis,
 } from '@wordpress/block-editor';
+
 import {
 	useMergeRefs,
 	useViewportMatch,
 	useResizeObserver,
 } from '@wordpress/compose';
 import { ReusableBlocksMenuItems } from '@wordpress/reusable-blocks';
+import { createBlock } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -51,6 +57,8 @@ const LAYOUT = {
 	alignments: [],
 };
 
+const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
+
 export default function BlockEditor() {
 	const { setIsInserterOpened } = useDispatch( editSiteStore );
 	const { storedSettings, templateType, canvasMode, hasPageContentFocus } =
@@ -72,6 +80,8 @@ export default function BlockEditor() {
 			},
 			[ setIsInserterOpened ]
 		);
+
+	const { clearSelectedBlock } = useDispatch( blockEditorStore );
 
 	const settingsBlockPatterns =
 		storedSettings.__experimentalAdditionalBlockPatterns ?? // WP 6.0
@@ -121,6 +131,18 @@ export default function BlockEditor() {
 		[ settingsBlockPatternCategories, restBlockPatternCategories ]
 	);
 
+	const [ blocks, onInput, onChange ] = useBlockEditorBlocks(
+		'postType',
+		templateType
+	);
+
+	const { isNavigationFocusMode: isTemplateTypeNavigation } =
+		useNavigationFocusMode( {
+			templateType,
+			blocks,
+			canvasMode,
+		} );
+
 	const settings = useMemo( () => {
 		const {
 			__experimentalAdditionalBlockPatterns,
@@ -133,13 +155,17 @@ export default function BlockEditor() {
 			inserterMediaCategories,
 			__experimentalBlockPatterns: blockPatterns,
 			__experimentalBlockPatternCategories: blockPatternCategories,
+			...( isTemplateTypeNavigation && {
+				templateLock: 'insert',
+				template: [ [ 'core/navigation', {}, [] ] ],
+			} ),
 		};
-	}, [ storedSettings, blockPatterns, blockPatternCategories ] );
-
-	const [ blocks, onInput, onChange ] = useEntityBlockEditor(
-		'postType',
-		templateType
-	);
+	}, [
+		storedSettings,
+		blockPatterns,
+		blockPatternCategories,
+		isTemplateTypeNavigation,
+	] );
 
 	const contentRef = useRef();
 	const mergedRefs = useMergeRefs( [
@@ -149,20 +175,23 @@ export default function BlockEditor() {
 		usePageContentFocusNotifications(),
 	] );
 	const isMobileViewport = useViewportMatch( 'small', '<' );
-	const { clearSelectedBlock } = useDispatch( blockEditorStore );
 	const [ resizeObserver, sizes ] = useResizeObserver();
 
-	const isTemplatePart = templateType === 'wp_template_part';
+	const isFocusMode = FOCUSABLE_ENTITIES.includes( templateType );
 
 	const hasBlocks = blocks.length !== 0;
 	const enableResizing =
-		isTemplatePart &&
+		isFocusMode &&
 		canvasMode !== 'view' &&
 		// Disable resizing in mobile viewport.
 		! isMobileViewport;
+
 	const isViewMode = canvasMode === 'view';
+
 	const showBlockAppender =
-		( isTemplatePart && hasBlocks ) || isViewMode ? false : undefined;
+		( isTemplateTypeNavigation && isFocusMode && hasBlocks ) || isViewMode
+			? false
+			: undefined;
 
 	return (
 		<ExperimentalBlockEditorProvider
@@ -187,7 +216,7 @@ export default function BlockEditor() {
 						<BlockTools
 							className={ classnames( 'edit-site-visual-editor', {
 								'is-focus-mode':
-									isTemplatePart || !! editorCanvasView,
+									isFocusMode || !! editorCanvasView,
 								'is-view-mode': isViewMode,
 							} ) }
 							__unstableContentRef={ contentRef }
@@ -212,7 +241,13 @@ export default function BlockEditor() {
 								>
 									{ resizeObserver }
 									<BlockList
-										className="edit-site-block-editor__block-list wp-site-blocks"
+										className={ classnames(
+											'edit-site-block-editor__block-list wp-site-blocks',
+											{
+												'is-navigation-block':
+													isTemplateTypeNavigation,
+											}
+										) }
 										__experimentalLayout={ LAYOUT }
 										renderAppender={ showBlockAppender }
 									/>
@@ -225,4 +260,91 @@ export default function BlockEditor() {
 			<ReusableBlocksMenuItems />
 		</ExperimentalBlockEditorProvider>
 	);
+}
+
+function useNavigationFocusMode( { templateType, blocks, canvasMode } ) {
+	const isNavigationFocusMode = templateType === 'wp_navigation';
+	const navigationBlockClientId = blocks[ 0 ]?.clientId;
+	const isEditMode = canvasMode === 'edit';
+
+	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
+		useDispatch( blockEditorStore )
+	);
+
+	// Auto-select the Navigation block when entering Navigation focus mode.
+	useEffect( () => {
+		if ( isEditMode && isNavigationFocusMode ) {
+			selectBlock( navigationBlockClientId );
+		}
+	}, [
+		navigationBlockClientId,
+		isNavigationFocusMode,
+		isEditMode,
+		selectBlock,
+	] );
+
+	// Set block editing mode to contentOnly when entering Navigation focus mode.
+	// This ensures that non-content controls on the block will be hidden and thus
+	// the user can focus on editing the Navigation Menu content only.
+	useEffect( () => {
+		if ( isNavigationFocusMode ) {
+			setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
+		}
+
+		return () => {
+			unsetBlockEditingMode( navigationBlockClientId );
+		};
+	}, [
+		navigationBlockClientId,
+		isNavigationFocusMode,
+		unsetBlockEditingMode,
+		setBlockEditingMode,
+	] );
+
+	return {
+		isNavigationFocusMode,
+	};
+}
+
+/**
+ * Returns the appropriate block editor state for a given entity type.
+ *
+ * Note: Navigation entities require a wrapping Navigation block to provide
+ * them with some basic layout and styling. Therefore we create a "ghost" block
+ * and provide it will a reference to the navigation entity ID being edited.
+ *
+ * In this scenario it is the **block** that handles syncing the entity content
+ * whereas for other entities this is handled by entity block editor.
+ *
+ * @param {string} kind the entity kind
+ * @param {string} type the entity type
+ * @return {[WPBlock[], Function, Function]} The block array and setters.
+ */
+function useBlockEditorBlocks( kind, type ) {
+	const noop = () => {};
+
+	const entityId = useEntityId( kind, type );
+
+	const [ entityBlocks, onInput, onChange ] = useEntityBlockEditor(
+		kind,
+		type,
+		{
+			id: entityId,
+		}
+	);
+
+	const wrappedBlocks = useMemo( () => {
+		return [
+			createBlock( 'core/navigation', {
+				ref: entityId,
+				templateLock: false,
+			} ),
+		];
+	}, [ entityId ] );
+
+	if ( type === `wp_navigation` ) {
+		return [ wrappedBlocks, noop, noop ];
+	}
+
+	return [ entityBlocks, onInput, onChange ];
 }
