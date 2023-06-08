@@ -11,7 +11,7 @@ import BlockInfo from './components/block-info-slot-fill';
 import { useShouldContextualToolbarShow } from './utils/use-should-contextual-toolbar-show';
 import { cleanEmptyObject } from './hooks/utils';
 import { useBlockEditingMode } from './components/block-editing-mode';
-import { PrivateImageSizeControl } from './components/image-size-control';
+import { ImageSizeControl } from './components/image-size-control';
 
 /**
  * Private @wordpress/block-editor APIs.
@@ -22,7 +22,7 @@ lock( privateApis, {
 	ExperimentalBlockEditorProvider,
 	PrivateInserter,
 	PrivateListView,
-	PrivateImageSizeControl,
+	ImageSizeControl,
 	ResizableBoxPopover,
 	BlockInfo,
 	useShouldContextualToolbarShow,
