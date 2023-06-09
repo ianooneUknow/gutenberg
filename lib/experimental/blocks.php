@@ -205,3 +205,93 @@ function gutenberg_apply_render_block_data_block_type_filter( $parsed_block, $so
 	return $parsed_block;
 }
 add_filter( 'render_block_data', 'gutenberg_apply_render_block_data_block_type_filter', 15, 3 );
+
+/**
+ * Filters the block template object after it has been (potentially) fetched from the theme file.
+ *
+ * @param WP_Block_Template|null $block_template The found block template, or null if there is none.
+ * @param string                 $id             Template unique identifier (example: 'theme_slug//template_slug').
+ * @param string                 $template_type  Template type: 'wp_template' or 'wp_template_part'.
+ */
+function gutenberg_parse_and_serialize_blocks( $block_template, $id, $template_type ) {
+
+	$blocks = parse_blocks( $block_template->content );
+	$block_template->content = gutenberg_serialize_blocks( $blocks );
+
+	// $block_template->content = 'abc' . $block_template->content; // Seen in FSE!
+
+	return $block_template;
+}
+add_filter( 'get_block_file_template', 'gutenberg_parse_and_serialize_blocks', 10, 3 );
+
+function gutenberg_serialize_block( $block ) {
+	$block_content = '';
+
+	$anchor_block = 'core/post-content';
+	$relative_position = 'after';
+
+	$inserted_block  = array(
+		'blockName'    => 'core/avatar',
+		'attrs'        => array(
+			'size'  => 40,
+			'style' => array(
+				'border' => array( 'radius' => '10px' ),
+			),
+		),
+		'innerHTML'    => '',
+		'innerContent' => array(),
+	);
+
+	// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_child_block()` or even
+	// our filters from `gutenberg_register_auto_inserted_blocks()`.
+	if ( $anchor_block === $block['blockName'] ) {
+		if ( 'first_child' === $relative_position ) {
+			array_unshift( $block['innerBlocks'], $inserted_block );
+			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
+			// when rendering blocks, we also need to prepend a value (`null`, to mark a block
+			// location) to that array.
+			array_unshift( $block['innerContent'], null );
+		} elseif ( 'last_child' === $relative_position ) {
+			array_push( $block['innerBlocks'], $inserted_block );
+			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
+			// when rendering blocks, we also need to prepend a value (`null`, to mark a block
+			// location) to that array.
+			array_push( $block['innerContent'], null );
+		}
+	}
+
+	$index = 0;
+	foreach ( $block['innerContent'] as $chunk ) {
+		if ( is_string( $chunk ) ) {
+			$block_content .= $chunk;
+		} else { // Compare to WP_Block::render().
+			$inner_block = $block['innerBlocks'][ $index++ ];
+
+			// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_blocks()` or even
+			// our filters from `gutenberg_register_auto_inserted_blocks()`.
+			if ( 'before' === $relative_position && $anchor_block === $inner_block['blockName'] ) {
+				$block_content .= gutenberg_serialize_block( $inserted_block );
+			}
+
+			$block_content .= gutenberg_serialize_block( $inner_block );
+
+			if ( 'after' === $relative_position && $anchor_block === $inner_block['blockName'] ) {
+				$block_content .= gutenberg_serialize_block( $inserted_block );
+			}
+		}
+	}
+
+	if ( ! is_array( $block['attrs'] ) ) {
+		$block['attrs'] = array();
+	}
+
+	return get_comment_delimited_block_content(
+		$block['blockName'],
+		$block['attrs'],
+		$block_content
+	);
+}
+
+function gutenberg_serialize_blocks( $blocks ) {
+	return implode( '', array_map( 'gutenberg_serialize_block', $blocks ) );
+}
