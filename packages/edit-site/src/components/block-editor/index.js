@@ -7,7 +7,7 @@ import classnames from 'classnames';
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useMemo, useRef, useEffect } from '@wordpress/element';
+import { useMemo, useRef } from '@wordpress/element';
 import {
 	useEntityBlockEditor,
 	useEntityId,
@@ -272,34 +272,20 @@ function useNavigationFocusMode( { templateType, blocks, canvasMode } ) {
 	);
 
 	// Auto-select the Navigation block when entering Navigation focus mode.
-	useEffect( () => {
-		if ( isEditMode && isNavigationFocusMode ) {
-			selectBlock( navigationBlockClientId );
-		}
-	}, [
-		navigationBlockClientId,
-		isNavigationFocusMode,
-		isEditMode,
-		selectBlock,
-	] );
+
+	if ( isEditMode && isNavigationFocusMode ) {
+		selectBlock( navigationBlockClientId );
+	}
 
 	// Set block editing mode to contentOnly when entering Navigation focus mode.
 	// This ensures that non-content controls on the block will be hidden and thus
 	// the user can focus on editing the Navigation Menu content only.
-	useEffect( () => {
-		if ( isNavigationFocusMode ) {
-			setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
-		}
 
-		return () => {
-			unsetBlockEditingMode( navigationBlockClientId );
-		};
-	}, [
-		navigationBlockClientId,
-		isNavigationFocusMode,
-		unsetBlockEditingMode,
-		setBlockEditingMode,
-	] );
+	if ( isNavigationFocusMode ) {
+		setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
+	} else {
+		unsetBlockEditingMode();
+	}
 
 	return {
 		isNavigationFocusMode,
