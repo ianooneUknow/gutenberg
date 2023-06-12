@@ -266,6 +266,7 @@ function gutenberg_serialize_block( $block ) {
 		}
 		array_splice( $block['innerBlocks'], $anchor_block_index, 0, array( $inserted_block ) );
 
+		// Find matching `innerContent` chunk index.
 		$chunk_index = 0;
 		while( $anchor_block_index > 0 ) {
 			if ( ! is_string( $block['innerContent'][ $chunk_index ] ) ) {
@@ -273,6 +274,9 @@ function gutenberg_serialize_block( $block ) {
 			}
 			$chunk_index++;
 		}
+		// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
+		// when rendering blocks, we also need to insert a value (`null`, to mark a block
+		// location) into that array.
 		array_splice( $block['innerContent'], $chunk_index, 0, array( null ) );
 	}
 
