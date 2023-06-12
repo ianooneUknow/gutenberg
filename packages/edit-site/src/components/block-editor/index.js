@@ -155,10 +155,11 @@ export default function BlockEditor() {
 			inserterMediaCategories,
 			__experimentalBlockPatterns: blockPatterns,
 			__experimentalBlockPatternCategories: blockPatternCategories,
-			...( isTemplateTypeNavigation && {
-				templateLock: 'insert',
-				template: [ [ 'core/navigation', {}, [] ] ],
-			} ),
+			// Template locking must be explicitly "unset" for non-navigation entities.
+			templateLock: isTemplateTypeNavigation ? 'insert' : false,
+			template: isTemplateTypeNavigation
+				? [ [ 'core/navigation', {}, [] ] ]
+				: false,
 		};
 	}, [
 		storedSettings,
