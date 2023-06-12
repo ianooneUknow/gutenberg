@@ -68,7 +68,7 @@ import { detectColors } from './utils';
 import ManageMenusButton from './manage-menus-button';
 import MenuInspectorControls from './menu-inspector-controls';
 import DeletedNavigationWarning from './deleted-navigation-warning';
-import { unlock } from '../../private-apis';
+import { unlock } from '../../lock-unlock';
 
 const { useBlockEditingMode } = unlock( blockEditorPrivateApis );
 
