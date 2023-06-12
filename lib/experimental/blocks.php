@@ -130,22 +130,34 @@ function gutenberg_auto_insert_child_block( $relative_position, $inserted_block 
 /**
  * Return a function that auto-inserts blocks relative to a given block.
  *
+ * @param string $anchor_block      The block to insert relative to.
  * @param string $relative_position The position relative to the given block.
  * @param array  $inserted_block    The block to insert.
  * @return callable A function that accepts a block's content and returns the content with the inserted block.
  */
-function gutenberg_auto_insert_block( $relative_position, $inserted_block ) {
-	// Can we avoid infinite loops?
+function gutenberg_auto_insert_block( $anchor_block, $relative_position, $inserted_block ) {
+	return function( $block ) use ( $anchor_block, $relative_position, $inserted_block ) {
+		$anchor_block_index = array_search( $anchor_block, array_column( $block['innerBlocks'], 'blockName' ), true );
+		if ( false !== $anchor_block_index ) {
+			if ( 'after' === $relative_position ) {
+				$anchor_block_index++;
+			}
+			array_splice( $block['innerBlocks'], $anchor_block_index, 0, array( $inserted_block ) );
 
-	return function( $block_content ) use ( $relative_position, $inserted_block ) {
-		$inserted_content = render_block( $inserted_block );
-
-		if ( 'before' === $relative_position ) {
-			$block_content = $inserted_content . $block_content;
-		} elseif ( 'after' === $relative_position ) {
-			$block_content = $block_content . $inserted_content;
+			// Find matching `innerContent` chunk index.
+			$chunk_index = 0;
+			while( $anchor_block_index > 0 ) {
+				if ( ! is_string( $block['innerContent'][ $chunk_index ] ) ) {
+					$anchor_block_index--;
+				}
+				$chunk_index++;
+			}
+			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
+			// when rendering blocks, we also need to insert a value (`null`, to mark a block
+			// location) into that array.
+			array_splice( $block['innerContent'], $chunk_index, 0, array( null ) );
 		}
-		return $block_content;
+		return $block;
 	};
 }
 
@@ -171,13 +183,16 @@ function gutenberg_register_auto_inserted_blocks( $settings, $metadata ) {
 		$mapped_position = $property_mappings[ $position ];
 
 		$inserted_block = array(
-			'blockName' => $metadata['name'],
-			'attrs'     => $block_data['attrs'],
+			'blockName'    => $metadata['name'],
+			'attrs'        => $block_data['attrs'],
+			'innerHTML'    => '',
+			'innerContent' => array(),
+			'innerBlocks'  => array(),
 		);
 		// TODO: In the long run, we'd likely want some sort of registry for auto-inserted blocks.
 		if ( 'before' === $mapped_position || 'after' === $mapped_position ) {
-			$inserter = gutenberg_auto_insert_block( $mapped_position, $inserted_block );
-			add_filter( "render_block_$block_name", $inserter, 10, 2 );
+			$inserter = gutenberg_auto_insert_block( $block_name, $mapped_position, $inserted_block );
+			add_filter( "gutenberg_serialize_block", $inserter, 10, 1 );
 		} elseif ( 'first_child' === $mapped_position || 'last_child' === $mapped_position ) {
 			$inserter = gutenberg_auto_insert_child_block( $mapped_position, $inserted_block );
 			add_filter( "render_block_data_$block_name", $inserter, 10, 2 );
@@ -238,60 +253,7 @@ add_filter( 'get_block_file_template', 'gutenberg_parse_and_serialize_blocks', 1
 function gutenberg_serialize_block( $block ) {
 	$block_content = '';
 
-	$anchor_block = 'core/post-content';
-	$relative_position = 'after';
-
-	$inserted_block  = array(
-		'blockName'    => 'core/social-link',
-		'attrs'        => array(
-			'service' => 'wordpress',
-			'url'     => 'https://wordpress.org/'
-		),
-		'innerHTML'    => '',
-		'innerContent' => array(),
-		'innerBlocks' => array(),
-	);
-
-	// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_child_block()` or even
-	// our filters from `gutenberg_register_auto_inserted_blocks()`.
-	if ( $anchor_block === $block['blockName'] ) {
-		if ( 'first_child' === $relative_position ) {
-			array_unshift( $block['innerBlocks'], $inserted_block );
-			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
-			// when rendering blocks, we also need to prepend a value (`null`, to mark a block
-			// location) to that array.
-			array_unshift( $block['innerContent'], null );
-		} elseif ( 'last_child' === $relative_position ) {
-			array_push( $block['innerBlocks'], $inserted_block );
-			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
-			// when rendering blocks, we also need to prepend a value (`null`, to mark a block
-			// location) to that array.
-			array_push( $block['innerContent'], null );
-		}
-	}
-
-	// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_block()` or even
-	// our filters from `gutenberg_register_auto_inserted_blocks()`.
-	$anchor_block_index = array_search( $anchor_block, array_column( $block['innerBlocks'], 'blockName' ), true );
-	if ( false !== $anchor_block_index ) {
-		if ( 'after' === $relative_position ) {
-			$anchor_block_index++;
-		}
-		array_splice( $block['innerBlocks'], $anchor_block_index, 0, array( $inserted_block ) );
-
-		// Find matching `innerContent` chunk index.
-		$chunk_index = 0;
-		while( $anchor_block_index > 0 ) {
-			if ( ! is_string( $block['innerContent'][ $chunk_index ] ) ) {
-				$anchor_block_index--;
-			}
-			$chunk_index++;
-		}
-		// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
-		// when rendering blocks, we also need to insert a value (`null`, to mark a block
-		// location) into that array.
-		array_splice( $block['innerContent'], $chunk_index, 0, array( null ) );
-	}
+	$block = apply_filters( 'gutenberg_serialize_block', $block );
 
 	$index = 0;
 	foreach ( $block['innerContent'] as $chunk ) {
