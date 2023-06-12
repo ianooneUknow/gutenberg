@@ -7,7 +7,7 @@ import classnames from 'classnames';
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useMemo, useRef, useEffect } from '@wordpress/element';
+import { useMemo, useRef } from '@wordpress/element';
 import {
 	useEntityBlockEditor,
 	useEntityId,
@@ -30,7 +30,6 @@ import {
 	useResizeObserver,
 } from '@wordpress/compose';
 import { ReusableBlocksMenuItems } from '@wordpress/reusable-blocks';
-import { createBlock } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -48,6 +47,10 @@ import {
 	DisableNonPageContentBlocks,
 	usePageContentFocusNotifications,
 } from '../page-content-focus';
+import {
+	useNavigationBlockEditor,
+	useNavigationFocusMode,
+} from './navigation-editor';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
@@ -131,7 +134,7 @@ export default function BlockEditor() {
 		[ settingsBlockPatternCategories, restBlockPatternCategories ]
 	);
 
-	const [ blocks, onInput, onChange ] = useBlockEditorBlocks(
+	const [ blocks, onInput, onChange ] = useEntitiyTypeBlockEditor(
 		'postType',
 		templateType
 	);
@@ -263,90 +266,25 @@ export default function BlockEditor() {
 	);
 }
 
-function useNavigationFocusMode( { templateType, blocks, canvasMode } ) {
-	const isNavigationFocusMode = templateType === 'wp_navigation';
-	const navigationBlockClientId = blocks[ 0 ]?.clientId;
-	const isEditMode = canvasMode === 'edit';
-
-	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
-		useDispatch( blockEditorStore )
-	);
-
-	// Auto-select the Navigation block when entering Navigation focus mode.
-
-	useEffect( () => {
-		if ( isEditMode && isNavigationFocusMode ) {
-			selectBlock( navigationBlockClientId );
-		}
-	}, [
-		navigationBlockClientId,
-		isEditMode,
-		isNavigationFocusMode,
-		selectBlock,
-	] );
-
-	// Set block editing mode to contentOnly when entering Navigation focus mode.
-	// This ensures that non-content controls on the block will be hidden and thus
-	// the user can focus on editing the Navigation Menu content only.
-	useEffect( () => {
-		if ( isNavigationFocusMode ) {
-			setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
-		}
-
-		return () => {
-			unsetBlockEditingMode( navigationBlockClientId );
-		};
-	}, [
-		navigationBlockClientId,
-		isNavigationFocusMode,
-		unsetBlockEditingMode,
-		setBlockEditingMode,
-	] );
-
-	return {
-		isNavigationFocusMode,
-	};
-}
-
 /**
  * Returns the appropriate block editor state for a given entity type.
- *
- * Note: Navigation entities require a wrapping Navigation block to provide
- * them with some basic layout and styling. Therefore we create a "ghost" block
- * and provide it will a reference to the navigation entity ID being edited.
- *
- * In this scenario it is the **block** that handles syncing the entity content
- * whereas for other entities this is handled by entity block editor.
  *
  * @param {string} kind the entity kind
  * @param {string} type the entity type
  * @return {[WPBlock[], Function, Function]} The block array and setters.
  */
-function useBlockEditorBlocks( kind, type ) {
-	const noop = () => {};
-
+function useEntitiyTypeBlockEditor( kind, type ) {
 	const entityId = useEntityId( kind, type );
 
-	const [ entityBlocks, onInput, onChange ] = useEntityBlockEditor(
-		kind,
-		type,
-		{
-			id: entityId,
-		}
-	);
+	const entityBlockEditor = useEntityBlockEditor( kind, type, {
+		id: entityId,
+	} );
 
-	const wrappedBlocks = useMemo( () => {
-		return [
-			createBlock( 'core/navigation', {
-				ref: entityId,
-				templateLock: false,
-			} ),
-		];
-	}, [ entityId ] );
+	const navigationEditorBlockEditor = useNavigationBlockEditor( entityId );
 
 	if ( type === `wp_navigation` ) {
-		return [ wrappedBlocks, noop, noop ];
+		return navigationEditorBlockEditor;
 	}
 
-	return [ entityBlocks, onInput, onChange ];
+	return entityBlockEditor;
 }
