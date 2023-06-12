@@ -206,6 +206,19 @@ function gutenberg_apply_render_block_data_block_type_filter( $parsed_block, $so
 }
 add_filter( 'render_block_data', 'gutenberg_apply_render_block_data_block_type_filter', 15, 3 );
 
+function gutenberg_parse_and_serialize_block_templates( $query_result, $query, $template_type )  {
+	foreach( $query_result as $block_template ) {
+		if ( 'theme' !== $block_template->source ) {
+			continue;
+		}
+		$blocks = parse_blocks( $block_template->content );
+		$block_template->content = gutenberg_serialize_blocks( $blocks );
+	}
+
+	return $query_result;
+}
+add_filter( 'get_block_templates', 'gutenberg_parse_and_serialize_block_templates', 10, 3 );
+
 /**
  * Filters the block template object after it has been (potentially) fetched from the theme file.
  *
