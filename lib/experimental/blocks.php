@@ -271,7 +271,7 @@ function gutenberg_serialize_block( $block ) {
 		$inner_content_chunks = $block['innerContent'];
 		$chunk_index = 0;
 		while( $anchor_block_index > 0 ) {
-			if ( ! is_string( $inner_content_chunks[$chunk_index] ) ) {
+			if ( ! is_string( $inner_content_chunks[ $chunk_index ] ) ) {
 				$anchor_block_index--;
 			}
 			$chunk_index++;
