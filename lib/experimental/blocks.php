@@ -218,8 +218,6 @@ function gutenberg_parse_and_serialize_blocks( $block_template, $id, $template_t
 	$blocks = parse_blocks( $block_template->content );
 	$block_template->content = gutenberg_serialize_blocks( $blocks );
 
-	// $block_template->content = 'abc' . $block_template->content; // Seen in FSE!
-
 	return $block_template;
 }
 add_filter( 'get_block_file_template', 'gutenberg_parse_and_serialize_blocks', 10, 3 );
