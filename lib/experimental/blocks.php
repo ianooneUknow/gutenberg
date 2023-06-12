@@ -236,6 +236,7 @@ function gutenberg_serialize_block( $block ) {
 		),
 		'innerHTML'    => '',
 		'innerContent' => array(),
+		'innerBlocks' => array(),
 	);
 
 	// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_child_block()` or even
@@ -256,24 +257,36 @@ function gutenberg_serialize_block( $block ) {
 		}
 	}
 
+	// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_block()` or even
+	// our filters from `gutenberg_register_auto_inserted_blocks()`.
+	$inner_blocks = $block['innerBlocks'];
+	$anchor_block_index = array_search( $anchor_block, array_column( $inner_blocks, 'blockName' ), true );
+	if ( false !== $anchor_block_index ) {
+		if ( 'after' === $relative_position ) {
+			$anchor_block_index++;
+		}
+		array_splice( $inner_blocks, $anchor_block_index, 0, array( $inserted_block ) );
+		$block['innerBlocks'] = $inner_blocks;
+
+		$inner_content_chunks = $block['innerContent'];
+		$chunk_index = 0;
+		while( $anchor_block_index > 0 ) {
+			if ( ! is_string( $inner_content_chunks[$chunk_index] ) ) {
+				$anchor_block_index--;
+			}
+			$chunk_index++;
+		}
+		array_splice( $inner_content_chunks, $chunk_index, 0, array( null ) );
+		$block['innerContent'] = $inner_content_chunks;
+	}
+
 	$index = 0;
 	foreach ( $block['innerContent'] as $chunk ) {
 		if ( is_string( $chunk ) ) {
 			$block_content .= $chunk;
 		} else { // Compare to WP_Block::render().
 			$inner_block = $block['innerBlocks'][ $index++ ];
-
-			// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_block()` or even
-			// our filters from `gutenberg_register_auto_inserted_blocks()`.
-			if ( 'before' === $relative_position && $anchor_block === $inner_block['blockName'] ) {
-				$block_content .= gutenberg_serialize_block( $inserted_block );
-			}
-
 			$block_content .= gutenberg_serialize_block( $inner_block );
-
-			if ( 'after' === $relative_position && $anchor_block === $inner_block['blockName'] ) {
-				$block_content .= gutenberg_serialize_block( $inserted_block );
-			}
 		}
 	}
 
