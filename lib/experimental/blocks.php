@@ -134,7 +134,7 @@ function gutenberg_auto_insert_child_block( $relative_position, $inserted_block 
  * @param array  $inserted_block    The block to insert.
  * @return callable A function that accepts a block's content and returns the content with the inserted block.
  */
-function gutenberg_auto_insert_blocks( $relative_position, $inserted_block ) {
+function gutenberg_auto_insert_block( $relative_position, $inserted_block ) {
 	// Can we avoid infinite loops?
 
 	return function( $block_content ) use ( $relative_position, $inserted_block ) {
@@ -176,7 +176,7 @@ function gutenberg_register_auto_inserted_blocks( $settings, $metadata ) {
 		);
 		// TODO: In the long run, we'd likely want some sort of registry for auto-inserted blocks.
 		if ( 'before' === $mapped_position || 'after' === $mapped_position ) {
-			$inserter = gutenberg_auto_insert_blocks( $mapped_position, $inserted_block );
+			$inserter = gutenberg_auto_insert_block( $mapped_position, $inserted_block );
 			add_filter( "render_block_$block_name", $inserter, 10, 2 );
 		} elseif ( 'first_child' === $mapped_position || 'last_child' === $mapped_position ) {
 			$inserter = gutenberg_auto_insert_child_block( $mapped_position, $inserted_block );
@@ -263,7 +263,7 @@ function gutenberg_serialize_block( $block ) {
 		} else { // Compare to WP_Block::render().
 			$inner_block = $block['innerBlocks'][ $index++ ];
 
-			// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_blocks()` or even
+			// TODO: Ideally, we'll find a way to re-use `gutenberg_auto_insert_block()` or even
 			// our filters from `gutenberg_register_auto_inserted_blocks()`.
 			if ( 'before' === $relative_position && $anchor_block === $inner_block['blockName'] ) {
 				$block_content .= gutenberg_serialize_block( $inserted_block );
