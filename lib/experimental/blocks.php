@@ -229,12 +229,10 @@ function gutenberg_serialize_block( $block ) {
 	$relative_position = 'after';
 
 	$inserted_block  = array(
-		'blockName'    => 'core/avatar',
+		'blockName'    => 'core/social-link',
 		'attrs'        => array(
-			'size'  => 40,
-			'style' => array(
-				'border' => array( 'radius' => '10px' ),
-			),
+			'service' => 'wordpress',
+			'url'     => 'https://wordpress.org/'
 		),
 		'innerHTML'    => '',
 		'innerContent' => array(),
