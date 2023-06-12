@@ -288,12 +288,20 @@ function useNavigationFocusMode( { templateType, blocks, canvasMode } ) {
 	// Set block editing mode to contentOnly when entering Navigation focus mode.
 	// This ensures that non-content controls on the block will be hidden and thus
 	// the user can focus on editing the Navigation Menu content only.
+	useEffect( () => {
+		if ( isNavigationFocusMode ) {
+			setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
+		}
 
-	if ( isNavigationFocusMode ) {
-		setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
-	} else {
-		unsetBlockEditingMode();
-	}
+		return () => {
+			unsetBlockEditingMode( navigationBlockClientId );
+		};
+	}, [
+		navigationBlockClientId,
+		isNavigationFocusMode,
+		unsetBlockEditingMode,
+		setBlockEditingMode,
+	] );
 
 	return {
 		isNavigationFocusMode,
