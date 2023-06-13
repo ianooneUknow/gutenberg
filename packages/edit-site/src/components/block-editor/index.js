@@ -103,7 +103,6 @@ export default function BlockEditor() {
 			</SidebarInspectorFill>
 
 			<SiteEditorCanvas
-				blocks={ blocks }
 				settings={ settings }
 				templateType={ templateType }
 			/>
@@ -113,10 +112,18 @@ export default function BlockEditor() {
 	);
 }
 
-function SiteEditorCanvas( { templateType, settings, blocks } ) {
+function SiteEditorCanvas( { templateType, settings } ) {
 	const { clearSelectedBlock } = useDispatch( blockEditorStore );
 	const { isViewMode, isFocusMode } = useSiteEditorMode();
 	const [ resizeObserver, sizes ] = useResizeObserver();
+
+	// Get the blocks directly from the block editor store.
+	const { blocks } = useSelect( ( select ) => {
+		const { getBlocks } = select( blockEditorStore );
+		return {
+			blocks: getBlocks(),
+		};
+	}, [] );
 
 	const isMobileViewport = useViewportMatch( 'small', '<' );
 	const enableResizing =
