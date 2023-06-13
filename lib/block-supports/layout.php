@@ -11,7 +11,7 @@
  * @param WP_Block_Type $block_type Block Type.
  */
 function gutenberg_register_layout_support( $block_type ) {
-	$support_layout = block_has_support( $block_type, array( '__experimentalLayout' ), false );
+	$support_layout = block_has_support( $block_type, array( 'layout' ), false ) || block_has_support( $block_type, array( '__experimentalLayout' ), false );
 	if ( $support_layout ) {
 		if ( ! $block_type->attributes ) {
 			$block_type->attributes = array();
@@ -347,7 +347,7 @@ function gutenberg_get_layout_style( $selector, $layout, $has_block_gap_support 
  */
 function gutenberg_render_layout_support_flag( $block_content, $block ) {
 	$block_type       = WP_Block_Type_Registry::get_instance()->get_registered( $block['blockName'] );
-	$support_layout   = block_has_support( $block_type, array( '__experimentalLayout' ), false );
+	$support_layout   = block_has_support( $block_type, array( 'layout' ), false ) || block_has_support( $block_type, array( '__experimentalLayout' ), false );
 	$has_child_layout = isset( $block['attrs']['style']['layout']['selfStretch'] );
 
 	if ( ! $support_layout
@@ -402,7 +402,7 @@ function gutenberg_render_layout_support_flag( $block_content, $block ) {
 
 	$global_settings        = gutenberg_get_global_settings();
 	$global_layout_settings = _wp_array_get( $global_settings, array( 'layout' ), null );
-	$used_layout            = isset( $block['attrs']['layout'] ) ? $block['attrs']['layout'] : _wp_array_get( $block_type->supports, array( '__experimentalLayout', 'default' ), array() );
+	$used_layout            = isset( $block['attrs']['layout'] ) ? $block['attrs']['layout'] : _wp_array_get( $block_type->supports, array( 'layout', 'default' ), array() );
 
 	if ( isset( $used_layout['inherit'] ) && $used_layout['inherit'] && ! $global_layout_settings ) {
 		return $block_content;
