@@ -7,7 +7,7 @@ import classnames from 'classnames';
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useMemo, useRef } from '@wordpress/element';
+import { useMemo, useRef, useEffect } from '@wordpress/element';
 import {
 	useEntityBlockEditor,
 	useEntityId,
@@ -48,7 +48,6 @@ import {
 	DisableNonPageContentBlocks,
 	usePageContentFocusNotifications,
 } from '../page-content-focus';
-import { useNavigationFocusMode } from './navigation-editor';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
@@ -134,8 +133,6 @@ function getBlockEditorComponent( templateType ) {
 function NavigationBlockEditor( { children, settings } ) {
 	const noop = () => {};
 
-	useNavigationFocusMode();
-
 	const navigationMenuId = useEntityId( 'postType', 'wp_navigation' );
 
 	const blocks = useMemo( () => {
@@ -149,6 +146,40 @@ function NavigationBlockEditor( { children, settings } ) {
 			} ),
 		];
 	}, [ navigationMenuId ] );
+
+	const { isEditMode } = useSiteEditorMode();
+
+	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
+		useDispatch( blockEditorStore )
+	);
+
+	const navigationBlockClientId = blocks && blocks[ 0 ]?.clientId;
+
+	// Auto-select the Navigation block when entering Navigation focus mode.
+	useEffect( () => {
+		if ( navigationBlockClientId && isEditMode ) {
+			selectBlock( navigationBlockClientId );
+		}
+	}, [ navigationBlockClientId, isEditMode, selectBlock ] );
+
+	// Set block editing mode to contentOnly when entering Navigation focus mode.
+	// This ensures that non-content controls on the block will be hidden and thus
+	// the user can focus on editing the Navigation Menu content only.
+	useEffect( () => {
+		if ( ! navigationBlockClientId ) {
+			return;
+		}
+
+		setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
+
+		return () => {
+			unsetBlockEditingMode( navigationBlockClientId );
+		};
+	}, [
+		navigationBlockClientId,
+		unsetBlockEditingMode,
+		setBlockEditingMode,
+	] );
 
 	return (
 		<ExperimentalBlockEditorProvider
