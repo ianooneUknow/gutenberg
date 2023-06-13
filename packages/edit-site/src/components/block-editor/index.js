@@ -62,14 +62,16 @@ const LAYOUT = {
 
 const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
 
-function SiteEditorCanvas( {
-	children,
-	settings,
-	contentRef,
-	enableResizing,
-	isViewMode,
-} ) {
+function SiteEditorCanvas( { children, settings, contentRef } ) {
+	const { isViewMode, isFocusMode } = useSiteEditorMode();
 	const [ resizeObserver, sizes ] = useResizeObserver();
+
+	const isMobileViewport = useViewportMatch( 'small', '<' );
+	const enableResizing =
+		isFocusMode &&
+		! isViewMode &&
+		// Disable resizing in mobile viewport.
+		! isMobileViewport;
 
 	const mergedRefs = useMergeRefs( [
 		contentRef,
@@ -117,6 +119,9 @@ function useSiteEditorMode() {
 
 export default function BlockEditor() {
 	const contentRef = useRef();
+
+	const { isFocusMode, isViewMode, isEditMode } = useSiteEditorMode();
+
 	const { templateType, hasPageContentFocus } = useSelect( ( select ) => {
 		const { getEditedPostType, hasPageContentFocus: _hasPageContentFocus } =
 			unlock( select( editSiteStore ) );
@@ -134,8 +139,6 @@ export default function BlockEditor() {
 		templateType
 	);
 
-	const { isFocusMode, isViewMode, isEditMode } = useSiteEditorMode();
-
 	const { isNavigationFocusMode: isTemplateTypeNavigation } =
 		useNavigationFocusMode( {
 			templateType,
@@ -144,13 +147,6 @@ export default function BlockEditor() {
 		} );
 
 	const settings = useSiteEditorSettings( templateType );
-
-	const isMobileViewport = useViewportMatch( 'small', '<' );
-	const enableResizing =
-		isFocusMode &&
-		! isViewMode &&
-		// Disable resizing in mobile viewport.
-		! isMobileViewport;
 
 	const hasBlocks = blocks.length !== 0;
 
@@ -197,9 +193,7 @@ export default function BlockEditor() {
 							<BackButton />
 							<SiteEditorCanvas
 								contentRef={ contentRef }
-								isViewMode={ isViewMode }
 								settings={ settings }
-								enableResizing={ enableResizing }
 							>
 								<BlockList
 									className={ classnames(
