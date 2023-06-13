@@ -7,7 +7,7 @@ import { useSelect } from '@wordpress/data';
  */
 import { store as editSiteStore } from '../../store';
 import { unlock } from '../../lock-unlock';
-import { FOCUSABLE_ENTITIES } from '.';
+import { FOCUSABLE_ENTITIES } from './constants';
 
 export default function useSiteEditorMode() {
 	const { templateType, canvasMode } = useSelect( ( select ) => {

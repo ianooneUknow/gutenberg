@@ -30,7 +30,12 @@ import EditorCanvasContainer from '../editor-canvas-container';
 import { usePageContentFocusNotifications } from '../page-content-focus';
 import useSiteEditorSettings from './use-site-editor-settings';
 import useSiteEditorMode from './use-site-editor-mode';
-import { LAYOUT } from '.';
+
+const LAYOUT = {
+	type: 'default',
+	// At the root level of the site editor, no alignments should be allowed.
+	alignments: [],
+};
 
 export default function SiteEditorCanvas( { templateType } ) {
 	const { clearSelectedBlock } = useDispatch( blockEditorStore );

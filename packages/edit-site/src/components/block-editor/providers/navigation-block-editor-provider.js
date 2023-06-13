@@ -19,6 +19,8 @@ import useSiteEditorSettings from '../use-site-editor-settings';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
+const noop = () => {};
+
 /**
  * Block editor component for editing navigation menus.
  *
@@ -33,8 +35,6 @@ const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
  * @return {[WPBlock[], Function, Function]} The block array and setters.
  */
 export default function NavigationBlockEditorProvider( { children } ) {
-	const noop = () => {};
-
 	const settings = useSiteEditorSettings();
 
 	const navigationMenuId = useEntityId( 'postType', 'wp_navigation' );

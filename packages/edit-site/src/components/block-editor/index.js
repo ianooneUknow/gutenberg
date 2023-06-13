@@ -22,14 +22,6 @@ import { DisableNonPageContentBlocks } from '../page-content-focus';
 import SiteEditorCanvas from './site-editor-canvas';
 import getBlockEditorProvider from './get-block-editor-provider';
 
-export const LAYOUT = {
-	type: 'default',
-	// At the root level of the site editor, no alignments should be allowed.
-	alignments: [],
-};
-
-export const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
-
 export default function BlockEditor() {
 	const { templateType, hasPageContentFocus } = useSelect( ( select ) => {
 		const { getEditedPostType, hasPageContentFocus: _hasPageContentFocus } =
