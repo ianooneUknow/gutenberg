@@ -3,6 +3,7 @@
  */
 import {
 	PanelBody,
+	__experimentalText as Text,
 	__experimentalVStack as VStack,
 	Button,
 } from '@wordpress/components';
@@ -21,6 +22,7 @@ import { store as editSiteStore } from '../../../store';
 import useEditedEntityRecord from '../../use-edited-entity-record';
 import SidebarCard from '../sidebar-card';
 import PageContent from './page-content';
+import ChangeStatus from '../../change-status';
 
 export default function PagePanels() {
 	const context = useSelect(
@@ -54,11 +56,18 @@ export default function PagePanels() {
 				<SidebarCard
 					title={ page.title }
 					icon={ pageIcon }
-					description={ sprintf(
-						// translators: %s: Human-readable time difference, e.g. "2 days ago".
-						__( 'Last edited %s' ),
-						humanTimeDiff( page.modified )
-					) }
+					description={
+						<VStack>
+							<Text>
+								{ sprintf(
+									// translators: %s: Human-readable time difference, e.g. "2 days ago".
+									__( 'Last edited %s' ),
+									humanTimeDiff( page.modified )
+								) }
+							</Text>
+							<ChangeStatus post={ page } />
+						</VStack>
+					}
 				/>
 			</PanelBody>
 			<PanelBody title={ __( 'Content' ) }>
