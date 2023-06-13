@@ -44,15 +44,14 @@ export function useNavigationBlockEditor( navigationMenuId ) {
 /**
  * Wrapper for Navigation focus mode specific block editor.
  *
- * @param {Object} options
- * @param {string} options.templateType the template type of the current view
- * @param {Array}  options.blocks       the blocks in the editor
- * @param {string} options.canvasMode   the current mode of the canvas
+ * @param {Object}  options
+ * @param {string}  options.templateType the template type of the current view
+ * @param {Array}   options.blocks       the blocks in the editor
+ * @param {boolean} options.isEditMode   whether the editor is in edit mode
  */
-export function useNavigationFocusMode( { templateType, blocks, canvasMode } ) {
+export function useNavigationFocusMode( { templateType, blocks, isEditMode } ) {
 	const isNavigationFocusMode = templateType === 'wp_navigation';
 	const navigationBlockClientId = blocks[ 0 ]?.clientId;
-	const isEditMode = canvasMode === 'edit';
 
 	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
 		useDispatch( blockEditorStore )

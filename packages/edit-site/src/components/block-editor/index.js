@@ -96,24 +96,36 @@ function SiteEditorCanvas( {
 	);
 }
 
+function useSiteEditorMode() {
+	const { templateType, canvasMode } = useSelect( ( select ) => {
+		const { getEditedPostType, getCanvasMode } = unlock(
+			select( editSiteStore )
+		);
+
+		return {
+			templateType: getEditedPostType(),
+			canvasMode: getCanvasMode(),
+		};
+	}, [] );
+
+	return {
+		isFocusMode: FOCUSABLE_ENTITIES.includes( templateType ),
+		isViewMode: canvasMode === 'view',
+		isEditMode: canvasMode === 'edit',
+	};
+}
+
 export default function BlockEditor() {
 	const contentRef = useRef();
-	const { templateType, canvasMode, hasPageContentFocus } = useSelect(
-		( select ) => {
-			const {
-				getEditedPostType,
-				getCanvasMode,
-				hasPageContentFocus: _hasPageContentFocus,
-			} = unlock( select( editSiteStore ) );
+	const { templateType, hasPageContentFocus } = useSelect( ( select ) => {
+		const { getEditedPostType, hasPageContentFocus: _hasPageContentFocus } =
+			unlock( select( editSiteStore ) );
 
-			return {
-				templateType: getEditedPostType(),
-				canvasMode: getCanvasMode(),
-				hasPageContentFocus: _hasPageContentFocus(),
-			};
-		},
-		[]
-	);
+		return {
+			templateType: getEditedPostType(),
+			hasPageContentFocus: _hasPageContentFocus(),
+		};
+	}, [] );
 
 	const { clearSelectedBlock } = useDispatch( blockEditorStore );
 
@@ -122,27 +134,25 @@ export default function BlockEditor() {
 		templateType
 	);
 
+	const { isFocusMode, isViewMode, isEditMode } = useSiteEditorMode();
+
 	const { isNavigationFocusMode: isTemplateTypeNavigation } =
 		useNavigationFocusMode( {
 			templateType,
 			blocks,
-			canvasMode,
+			isEditMode,
 		} );
 
 	const settings = useSiteEditorSettings( templateType );
 
 	const isMobileViewport = useViewportMatch( 'small', '<' );
-
-	const isFocusMode = FOCUSABLE_ENTITIES.includes( templateType );
-
-	const hasBlocks = blocks.length !== 0;
 	const enableResizing =
 		isFocusMode &&
-		canvasMode !== 'view' &&
+		! isViewMode &&
 		// Disable resizing in mobile viewport.
 		! isMobileViewport;
 
-	const isViewMode = canvasMode === 'view';
+	const hasBlocks = blocks.length !== 0;
 
 	const showBlockAppender =
 		( isTemplateTypeNavigation && isFocusMode && hasBlocks ) || isViewMode
