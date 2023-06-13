@@ -7,12 +7,8 @@ import classnames from 'classnames';
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useMemo, useRef, useEffect } from '@wordpress/element';
-import {
-	useEntityBlockEditor,
-	useEntityId,
-	store as coreStore,
-} from '@wordpress/core-data';
+import { useMemo, useRef } from '@wordpress/element';
+import { store as coreStore } from '@wordpress/core-data';
 import {
 	BlockList,
 	BlockInspector,
@@ -21,9 +17,7 @@ import {
 	__unstableUseTypingObserver as useTypingObserver,
 	BlockEditorKeyboardShortcuts,
 	store as blockEditorStore,
-	privateApis as blockEditorPrivateApis,
 } from '@wordpress/block-editor';
-import { createBlock } from '@wordpress/blocks';
 
 import {
 	useMergeRefs,
@@ -48,8 +42,8 @@ import {
 	DisableNonPageContentBlocks,
 	usePageContentFocusNotifications,
 } from '../page-content-focus';
-
-const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
+import DefaultBlockEditor from './default-block-editor';
+import NavigationBlockEditor from './navigation-block-editor';
 
 const LAYOUT = {
 	type: 'default',
@@ -75,10 +69,7 @@ export default function BlockEditor() {
 	const BlockEditorComponent = getBlockEditorComponent( templateType );
 
 	return (
-		<BlockEditorComponent
-			settings={ settings }
-			templateType={ templateType }
-		>
+		<BlockEditorComponent templateType={ templateType }>
 			{ hasPageContentFocus && <DisableNonPageContentBlocks /> }
 			<TemplatePartConverter />
 			<SidebarInspectorFill>
@@ -117,106 +108,12 @@ function getBlockEditorComponent( templateType ) {
 	return Component;
 }
 
-/**
- * Block editor component for editing navigation menus.
- *
- * Note: Navigation entities require a wrapping Navigation block to provide
- * them with some basic layout and styling. Therefore we create a "ghost" block
- * and provide it will a reference to the navigation entity ID being edited.
- *
- * In this scenario it is the **block** that handles syncing the entity content
- * whereas for other entities this is handled by entity block editor.
- *
- * @param {number} navigationMenuId the navigation menu ID
- * @return {[WPBlock[], Function, Function]} The block array and setters.
- */
-function NavigationBlockEditor( { children, settings } ) {
-	const noop = () => {};
-
-	const navigationMenuId = useEntityId( 'postType', 'wp_navigation' );
-
-	const blocks = useMemo( () => {
-		return [
-			createBlock( 'core/navigation', {
-				ref: navigationMenuId,
-				// As the parent editor is locked with `templateLock`, the template locking
-				// must be explicitly "unset" on the block itself to allow the user to modify
-				// the block's content.
-				templateLock: false,
-			} ),
-		];
-	}, [ navigationMenuId ] );
-
-	const { isEditMode } = useSiteEditorMode();
-
-	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
-		useDispatch( blockEditorStore )
-	);
-
-	const navigationBlockClientId = blocks && blocks[ 0 ]?.clientId;
-
-	// Auto-select the Navigation block when entering Navigation focus mode.
-	useEffect( () => {
-		if ( navigationBlockClientId && isEditMode ) {
-			selectBlock( navigationBlockClientId );
-		}
-	}, [ navigationBlockClientId, isEditMode, selectBlock ] );
-
-	// Set block editing mode to contentOnly when entering Navigation focus mode.
-	// This ensures that non-content controls on the block will be hidden and thus
-	// the user can focus on editing the Navigation Menu content only.
-	useEffect( () => {
-		if ( ! navigationBlockClientId ) {
-			return;
-		}
-
-		setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
-
-		return () => {
-			unsetBlockEditingMode( navigationBlockClientId );
-		};
-	}, [
-		navigationBlockClientId,
-		unsetBlockEditingMode,
-		setBlockEditingMode,
-	] );
-
-	return (
-		<ExperimentalBlockEditorProvider
-			settings={ settings }
-			value={ blocks }
-			onInput={ noop }
-			onChange={ noop }
-			useSubRegistry={ false }
-		>
-			{ children }
-		</ExperimentalBlockEditorProvider>
-	);
-}
-
-function DefaultBlockEditor( { children, templateType, settings } ) {
-	const [ blocks, onInput, onChange ] = useEntityBlockEditor(
-		'postType',
-		templateType
-	);
-
-	return (
-		<ExperimentalBlockEditorProvider
-			settings={ settings }
-			value={ blocks }
-			onInput={ onInput }
-			onChange={ onChange }
-			useSubRegistry={ false }
-		>
-			{ children }
-		</ExperimentalBlockEditorProvider>
-	);
-}
-
-function SiteEditorCanvas( { templateType, settings } ) {
+function SiteEditorCanvas( { templateType } ) {
 	const { clearSelectedBlock } = useDispatch( blockEditorStore );
 	const { isViewMode, isFocusMode } = useSiteEditorMode();
 	const [ resizeObserver, sizes ] = useResizeObserver();
+
+	const settings = useSiteEditorSettings();
 
 	// Get the blocks directly from the block editor store.
 	const { blocks } = useSelect( ( select ) => {
@@ -303,7 +200,7 @@ function SiteEditorCanvas( { templateType, settings } ) {
 	);
 }
 
-function useSiteEditorMode() {
+export function useSiteEditorMode() {
 	const { templateType, canvasMode } = useSelect( ( select ) => {
 		const { getEditedPostType, getCanvasMode } = unlock(
 			select( editSiteStore )
@@ -322,7 +219,7 @@ function useSiteEditorMode() {
 	};
 }
 
-function useSiteEditorSettings( templateType ) {
+export function useSiteEditorSettings( templateType ) {
 	const { storedSettings } = useSelect( ( select ) => {
 		const { getSettings } = unlock( select( editSiteStore ) );
 
