@@ -33,6 +33,8 @@ export default function BlockEditor() {
 		};
 	}, [] );
 
+	// Choose the provider based on the template type currently
+	// being edited.
 	const BlockEditorProvider = getBlockEditorProvider( templateType );
 
 	return (
@@ -43,7 +45,7 @@ export default function BlockEditor() {
 				<BlockInspector />
 			</SidebarInspectorFill>
 
-			<SiteEditorCanvas templateType={ templateType } />
+			<SiteEditorCanvas />
 
 			<ReusableBlocksMenuItems />
 		</BlockEditorProvider>

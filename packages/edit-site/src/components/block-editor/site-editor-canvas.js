@@ -30,6 +30,7 @@ import EditorCanvasContainer from '../editor-canvas-container';
 import { usePageContentFocusNotifications } from '../page-content-focus';
 import useSiteEditorSettings from './use-site-editor-settings';
 import useSiteEditorMode from './use-site-editor-mode';
+import { store as editSiteStore } from '../../store';
 
 const LAYOUT = {
 	type: 'default',
@@ -37,7 +38,7 @@ const LAYOUT = {
 	alignments: [],
 };
 
-export default function SiteEditorCanvas( { templateType } ) {
+export default function SiteEditorCanvas() {
 	const { clearSelectedBlock } = useDispatch( blockEditorStore );
 	const { isViewMode, isFocusMode } = useSiteEditorMode();
 	const [ resizeObserver, sizes ] = useResizeObserver();
@@ -51,6 +52,14 @@ export default function SiteEditorCanvas( { templateType } ) {
 
 		return {
 			hasBlocks: blocks?.length !== 0,
+		};
+	}, [] );
+
+	const { templateType } = useSelect( ( select ) => {
+		const { getEditedPostType } = select( editSiteStore );
+
+		return {
+			templateType: getEditedPostType(),
 		};
 	}, [] );
 
