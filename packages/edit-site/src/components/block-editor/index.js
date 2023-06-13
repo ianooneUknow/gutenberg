@@ -88,13 +88,14 @@ export default function BlockEditor() {
 
 	const settings = useSiteEditorSettings( templateType );
 
+	const BlockEditorComponent = getBlockEditorComponent( templateType );
+
 	return (
-		<ExperimentalBlockEditorProvider
+		<BlockEditorComponent
 			settings={ settings }
-			value={ blocks }
+			blocks={ blocks }
 			onInput={ onInput }
 			onChange={ onChange }
-			useSubRegistry={ false }
 		>
 			{ hasPageContentFocus && <DisableNonPageContentBlocks /> }
 			<TemplatePartConverter />
@@ -108,6 +109,33 @@ export default function BlockEditor() {
 			/>
 
 			<ReusableBlocksMenuItems />
+		</BlockEditorComponent>
+	);
+}
+
+function getBlockEditorComponent( templateType ) {
+	switch ( templateType ) {
+		default:
+			return DefaultBlockEditor;
+	}
+}
+
+function DefaultBlockEditor( {
+	children,
+	blocks,
+	onInput,
+	onChange,
+	settings,
+} ) {
+	return (
+		<ExperimentalBlockEditorProvider
+			settings={ settings }
+			value={ blocks }
+			onInput={ onInput }
+			onChange={ onChange }
+			useSubRegistry={ false }
+		>
+			{ children }
 		</ExperimentalBlockEditorProvider>
 	);
 }
