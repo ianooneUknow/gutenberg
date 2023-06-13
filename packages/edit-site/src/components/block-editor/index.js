@@ -116,11 +116,13 @@ function SiteEditorCanvas( { templateType } ) {
 
 	const settings = useSiteEditorSettings();
 
-	// Get the blocks directly from the block editor store.
-	const { blocks } = useSelect( ( select ) => {
+	const { hasBlocks } = useSelect( ( select ) => {
 		const { getBlocks } = select( blockEditorStore );
+
+		const blocks = getBlocks();
+
 		return {
-			blocks: getBlocks(),
+			hasBlocks: blocks?.length !== 0,
 		};
 	}, [] );
 
@@ -140,7 +142,6 @@ function SiteEditorCanvas( { templateType } ) {
 	] );
 
 	const isTemplateTypeNavigation = templateType === 'wp_navigation';
-	const hasBlocks = blocks?.length !== 0;
 
 	const showBlockAppender =
 		( isTemplateTypeNavigation && isFocusMode && hasBlocks ) || isViewMode
