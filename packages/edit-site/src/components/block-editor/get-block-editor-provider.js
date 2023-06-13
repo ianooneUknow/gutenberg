@@ -18,6 +18,8 @@ export default function getBlockEditorProvider( entityType ) {
 		case 'wp_navigation':
 			Provider = NavigationBlockEditor;
 			break;
+		case 'wp_template':
+		case 'wp_template_part':
 		default:
 			Provider = DefaultBlockEditor;
 			break;
