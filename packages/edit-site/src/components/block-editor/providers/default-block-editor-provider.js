@@ -8,13 +8,13 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { store as editSiteStore } from '../../store';
-import { unlock } from '../../lock-unlock';
-import useSiteEditorSettings from './use-site-editor-settings';
+import { store as editSiteStore } from '../../../store';
+import { unlock } from '../../../lock-unlock';
+import useSiteEditorSettings from '../use-site-editor-settings';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
-export default function DefaultBlockEditor( { children } ) {
+export default function DefaultBlockEditorProvider( { children } ) {
 	const settings = useSiteEditorSettings();
 
 	const { templateType } = useSelect( ( select ) => {

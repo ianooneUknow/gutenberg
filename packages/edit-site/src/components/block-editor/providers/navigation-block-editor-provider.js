@@ -13,9 +13,9 @@ import { createBlock } from '@wordpress/blocks';
 /**
  * Internal dependencies
  */
-import { unlock } from '../../lock-unlock';
-import useSiteEditorMode from './use-site-editor-mode';
-import useSiteEditorSettings from './use-site-editor-settings';
+import { unlock } from '../../../lock-unlock';
+import useSiteEditorMode from '../use-site-editor-mode';
+import useSiteEditorSettings from '../use-site-editor-settings';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
@@ -32,7 +32,7 @@ const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
  * @param {number} navigationMenuId the navigation menu ID
  * @return {[WPBlock[], Function, Function]} The block array and setters.
  */
-export default function NavigationBlockEditor( { children } ) {
+export default function NavigationBlockEditorProvider( { children } ) {
 	const noop = () => {};
 
 	const settings = useSiteEditorSettings();

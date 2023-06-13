@@ -20,7 +20,7 @@ import { store as editSiteStore } from '../../store';
 import { unlock } from '../../lock-unlock';
 import { DisableNonPageContentBlocks } from '../page-content-focus';
 import SiteEditorCanvas from './site-editor-canvas';
-import getBlockEditorComponent from './get-block-editor-component';
+import getBlockEditorProvider from './get-block-editor-provider';
 
 export const LAYOUT = {
 	type: 'default',
@@ -41,10 +41,10 @@ export default function BlockEditor() {
 		};
 	}, [] );
 
-	const BlockEditorComponent = getBlockEditorComponent( templateType );
+	const BlockEditorProvider = getBlockEditorProvider( templateType );
 
 	return (
-		<BlockEditorComponent>
+		<BlockEditorProvider>
 			{ hasPageContentFocus && <DisableNonPageContentBlocks /> }
 			<TemplatePartConverter />
 			<SidebarInspectorFill>
@@ -54,6 +54,6 @@ export default function BlockEditor() {
 			<SiteEditorCanvas templateType={ templateType } />
 
 			<ReusableBlocksMenuItems />
-		</BlockEditorComponent>
+		</BlockEditorProvider>
 	);
 }
