@@ -23,19 +23,19 @@ import SiteEditorCanvas from './site-editor-canvas';
 import getBlockEditorProvider from './get-block-editor-provider';
 
 export default function BlockEditor() {
-	const { templateType, hasPageContentFocus } = useSelect( ( select ) => {
+	const { entityType, hasPageContentFocus } = useSelect( ( select ) => {
 		const { getEditedPostType, hasPageContentFocus: _hasPageContentFocus } =
 			unlock( select( editSiteStore ) );
 
 		return {
-			templateType: getEditedPostType(),
+			entityType: getEditedPostType(),
 			hasPageContentFocus: _hasPageContentFocus(),
 		};
 	}, [] );
 
-	// Choose the provider based on the template type currently
+	// Choose the provider based on the entity type currently
 	// being edited.
-	const BlockEditorProvider = getBlockEditorProvider( templateType );
+	const BlockEditorProvider = getBlockEditorProvider( entityType );
 
 	return (
 		<BlockEditorProvider>
