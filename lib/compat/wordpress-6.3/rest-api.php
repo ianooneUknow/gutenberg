@@ -6,6 +6,15 @@
  */
 
 /**
+ * Registers the block patterns REST API routes.
+ */
+function gutenberg_register_rest_block_patterns() {
+	$block_patterns = new Gutenberg_REST_Block_Patterns_Controller_6_3();
+	$block_patterns->register_routes();
+}
+add_action( 'rest_api_init', 'gutenberg_register_rest_block_patterns' );
+
+/**
  * Registers the block pattern directory.
  */
 function gutenberg_register_rest_pattern_directory() {
