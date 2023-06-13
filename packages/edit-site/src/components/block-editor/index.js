@@ -7,8 +7,7 @@ import classnames from 'classnames';
  * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useMemo, useRef } from '@wordpress/element';
-import { store as coreStore } from '@wordpress/core-data';
+import { useRef } from '@wordpress/element';
 import {
 	BlockList,
 	BlockInspector,
@@ -29,7 +28,7 @@ import { ReusableBlocksMenuItems } from '@wordpress/reusable-blocks';
 /**
  * Internal dependencies
  */
-import inserterMediaCategories from './inserter-media-categories';
+
 import TemplatePartConverter from '../template-part-converter';
 import { SidebarInspectorFill } from '../sidebar-edit-mode';
 import { store as editSiteStore } from '../../store';
@@ -44,6 +43,8 @@ import {
 } from '../page-content-focus';
 import DefaultBlockEditor from './default-block-editor';
 import NavigationBlockEditor from './navigation-block-editor';
+import useSiteEditorSettings from './use-site-editor-settings';
+import useSiteEditorMode from './use-site-editor-mode';
 
 const LAYOUT = {
 	type: 'default',
@@ -51,7 +52,7 @@ const LAYOUT = {
 	alignments: [],
 };
 
-const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
+export const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
 
 export default function BlockEditor() {
 	const { templateType, hasPageContentFocus } = useSelect( ( select ) => {
@@ -198,106 +199,4 @@ function SiteEditorCanvas( { templateType } ) {
 			}
 		</EditorCanvasContainer.Slot>
 	);
-}
-
-export function useSiteEditorMode() {
-	const { templateType, canvasMode } = useSelect( ( select ) => {
-		const { getEditedPostType, getCanvasMode } = unlock(
-			select( editSiteStore )
-		);
-
-		return {
-			templateType: getEditedPostType(),
-			canvasMode: getCanvasMode(),
-		};
-	}, [] );
-
-	return {
-		isFocusMode: FOCUSABLE_ENTITIES.includes( templateType ),
-		isViewMode: canvasMode === 'view',
-		isEditMode: canvasMode === 'edit',
-	};
-}
-
-export function useSiteEditorSettings( templateType ) {
-	const { storedSettings } = useSelect( ( select ) => {
-		const { getSettings } = unlock( select( editSiteStore ) );
-
-		return {
-			storedSettings: getSettings(),
-		};
-	}, [] );
-
-	const isNavigationFocusMode = templateType === 'wp_navigation';
-
-	const settingsBlockPatterns =
-		storedSettings.__experimentalAdditionalBlockPatterns ?? // WP 6.0
-		storedSettings.__experimentalBlockPatterns; // WP 5.9
-	const settingsBlockPatternCategories =
-		storedSettings.__experimentalAdditionalBlockPatternCategories ?? // WP 6.0
-		storedSettings.__experimentalBlockPatternCategories; // WP 5.9
-
-	const { restBlockPatterns, restBlockPatternCategories } = useSelect(
-		( select ) => ( {
-			restBlockPatterns: select( coreStore ).getBlockPatterns(),
-			restBlockPatternCategories:
-				select( coreStore ).getBlockPatternCategories(),
-		} ),
-		[]
-	);
-	const blockPatterns = useMemo(
-		() =>
-			[
-				...( settingsBlockPatterns || [] ),
-				...( restBlockPatterns || [] ),
-			]
-				.filter(
-					( x, index, arr ) =>
-						index === arr.findIndex( ( y ) => x.name === y.name )
-				)
-				.filter( ( { postTypes } ) => {
-					return (
-						! postTypes ||
-						( Array.isArray( postTypes ) &&
-							postTypes.includes( templateType ) )
-					);
-				} ),
-		[ settingsBlockPatterns, restBlockPatterns, templateType ]
-	);
-
-	const blockPatternCategories = useMemo(
-		() =>
-			[
-				...( settingsBlockPatternCategories || [] ),
-				...( restBlockPatternCategories || [] ),
-			].filter(
-				( x, index, arr ) =>
-					index === arr.findIndex( ( y ) => x.name === y.name )
-			),
-		[ settingsBlockPatternCategories, restBlockPatternCategories ]
-	);
-	return useMemo( () => {
-		const {
-			__experimentalAdditionalBlockPatterns,
-			__experimentalAdditionalBlockPatternCategories,
-			...restStoredSettings
-		} = storedSettings;
-
-		return {
-			...restStoredSettings,
-			inserterMediaCategories,
-			__experimentalBlockPatterns: blockPatterns,
-			__experimentalBlockPatternCategories: blockPatternCategories,
-			// Template locking must be explicitly "unset" for non-navigation entities.
-			templateLock: isNavigationFocusMode ? 'insert' : false,
-			template: isNavigationFocusMode
-				? [ [ 'core/navigation', {}, [] ] ]
-				: false,
-		};
-	}, [
-		storedSettings,
-		blockPatterns,
-		blockPatternCategories,
-		isNavigationFocusMode,
-	] );
 }

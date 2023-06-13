@@ -14,7 +14,8 @@ import { createBlock } from '@wordpress/blocks';
  * Internal dependencies
  */
 import { unlock } from '../../lock-unlock';
-import { useSiteEditorSettings, useSiteEditorMode } from './';
+import useSiteEditorMode from './use-site-editor-mode';
+import useSiteEditorSettings from './use-site-editor-settings';
 
 const { ExperimentalBlockEditorProvider } = unlock( blockEditorPrivateApis );
 
