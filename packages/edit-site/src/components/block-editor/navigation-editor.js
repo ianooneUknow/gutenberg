@@ -15,12 +15,8 @@ const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
 
 /**
  * Wrapper for Navigation focus mode specific block editor.
- *
- * @param {Object} options
- * @param {string} options.templateType the template type of the current view
  */
-export function useNavigationFocusMode( { templateType } ) {
-	const isNavigationFocusMode = templateType === 'wp_navigation';
+export function useNavigationFocusMode() {
 	const { isEditMode } = useSiteEditorMode();
 
 	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
@@ -39,15 +35,10 @@ export function useNavigationFocusMode( { templateType } ) {
 
 	// Auto-select the Navigation block when entering Navigation focus mode.
 	useEffect( () => {
-		if ( navigationBlockClientId && isEditMode && isNavigationFocusMode ) {
+		if ( navigationBlockClientId && isEditMode ) {
 			selectBlock( navigationBlockClientId );
 		}
-	}, [
-		navigationBlockClientId,
-		isEditMode,
-		isNavigationFocusMode,
-		selectBlock,
-	] );
+	}, [ navigationBlockClientId, isEditMode, selectBlock ] );
 
 	// Set block editing mode to contentOnly when entering Navigation focus mode.
 	// This ensures that non-content controls on the block will be hidden and thus
@@ -57,16 +48,13 @@ export function useNavigationFocusMode( { templateType } ) {
 			return;
 		}
 
-		if ( isNavigationFocusMode ) {
-			setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
-		}
+		setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
 
 		return () => {
 			unsetBlockEditingMode( navigationBlockClientId );
 		};
 	}, [
 		navigationBlockClientId,
-		isNavigationFocusMode,
 		unsetBlockEditingMode,
 		setBlockEditingMode,
 	] );

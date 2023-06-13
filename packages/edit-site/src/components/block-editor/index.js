@@ -131,12 +131,10 @@ function getBlockEditorComponent( templateType ) {
  * @param {number} navigationMenuId the navigation menu ID
  * @return {[WPBlock[], Function, Function]} The block array and setters.
  */
-function NavigationBlockEditor( { children, settings, templateType } ) {
+function NavigationBlockEditor( { children, settings } ) {
 	const noop = () => {};
 
-	useNavigationFocusMode( {
-		templateType,
-	} );
+	useNavigationFocusMode();
 
 	const navigationMenuId = useEntityId( 'postType', 'wp_navigation' );
 
