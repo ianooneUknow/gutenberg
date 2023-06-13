@@ -65,8 +65,6 @@ export default function BlockEditor() {
 		};
 	}, [] );
 
-	const settings = useSiteEditorSettings( templateType );
-
 	const BlockEditorComponent = getBlockEditorComponent( templateType );
 
 	return (
@@ -77,10 +75,7 @@ export default function BlockEditor() {
 				<BlockInspector />
 			</SidebarInspectorFill>
 
-			<SiteEditorCanvas
-				settings={ settings }
-				templateType={ templateType }
-			/>
+			<SiteEditorCanvas templateType={ templateType } />
 
 			<ReusableBlocksMenuItems />
 		</BlockEditorComponent>
