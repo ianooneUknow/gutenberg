@@ -139,16 +139,17 @@ export default function BlockEditor() {
 		templateType
 	);
 
-	const { isNavigationFocusMode: isTemplateTypeNavigation } =
-		useNavigationFocusMode( {
-			templateType,
-			blocks,
-			isEditMode,
-		} );
+	useNavigationFocusMode( {
+		templateType,
+		blocks,
+		isEditMode,
+	} );
 
 	const settings = useSiteEditorSettings( templateType );
 
 	const hasBlocks = blocks.length !== 0;
+
+	const isTemplateTypeNavigation = templateType === 'wp_navigation';
 
 	const showBlockAppender =
 		( isTemplateTypeNavigation && isFocusMode && hasBlocks ) || isViewMode

@@ -86,8 +86,4 @@ export function useNavigationFocusMode( { templateType, blocks, isEditMode } ) {
 		unsetBlockEditingMode,
 		setBlockEditingMode,
 	] );
-
-	return {
-		isNavigationFocusMode,
-	};
 }
