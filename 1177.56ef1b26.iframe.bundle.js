@@ -1,0 +1,1 @@
+(globalThis.webpackChunkgutenberg=globalThis.webpackChunkgutenberg||[]).push([[1177],{"?6eb0":()=>{}}]);
