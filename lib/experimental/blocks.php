@@ -137,6 +137,23 @@ function gutenberg_auto_insert_child_block( $relative_position, $inserted_block 
  */
 function gutenberg_auto_insert_block( $anchor_block, $relative_position, $inserted_block ) {
 	return function( $block ) use ( $anchor_block, $relative_position, $inserted_block ) {
+		if ( $anchor_block === $block['blockName'] ) {
+			if ( 'first_child' === $relative_position ) {
+				array_unshift( $block['innerBlocks'], $inserted_block );
+				// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
+				// when rendering blocks, we also need to prepend a value (`null`, to mark a block
+				// location) to that array.
+				array_unshift( $block['innerContent'], null );
+			} elseif ( 'last_child' === $relative_position ) {
+				array_push( $block['innerBlocks'], $inserted_block );
+				// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
+				// when rendering blocks, we also need to prepend a value (`null`, to mark a block
+				// location) to that array.
+				array_push( $block['innerContent'], null );
+			}
+			return $block;
+		}
+
 		$anchor_block_index = array_search( $anchor_block, array_column( $block['innerBlocks'], 'blockName' ), true );
 		if ( false !== $anchor_block_index ) {
 			if ( 'after' === $relative_position ) {
@@ -190,10 +207,16 @@ function gutenberg_register_auto_inserted_blocks( $settings, $metadata ) {
 			'innerBlocks'  => array(),
 		);
 		// TODO: In the long run, we'd likely want some sort of registry for auto-inserted blocks.
-		if ( 'before' === $mapped_position || 'after' === $mapped_position ) {
-			$inserter = gutenberg_auto_insert_block( $block_name, $mapped_position, $inserted_block );
-			add_filter( "gutenberg_serialize_block", $inserter, 10, 1 );
-		} elseif ( 'first_child' === $mapped_position || 'last_child' === $mapped_position ) {
+
+		// Auto-insert sibling and child blocks into the editor (via the templates and patterns
+		// REST API endpoints), and auto-insert sibling blocks on the frontend.
+		// TODO: Make work for child blocks auto-insertion on the frontend.
+		$inserter = gutenberg_auto_insert_block( $block_name, $mapped_position, $inserted_block );
+		add_filter( "gutenberg_serialize_block", $inserter, 10, 1 );
+
+		// TODO: Remove the following in favor of the gutenberg_serialize_block filter above,
+		// once that is working for child blocks on the frontend.
+		if ( 'first_child' === $mapped_position || 'last_child' === $mapped_position ) {
 			$inserter = gutenberg_auto_insert_child_block( $mapped_position, $inserted_block );
 			add_filter( "render_block_data_$block_name", $inserter, 10, 2 );
 		}
