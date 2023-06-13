@@ -102,32 +102,6 @@ function gutenberg_register_metadata_attribute( $args ) {
 add_filter( 'register_block_type_args', 'gutenberg_register_metadata_attribute' );
 
 /**
- * Return a function that auto-inserts as the first or last inner block of a given block.
- *
- * @param string $relative_position The position relative to the given block ("first_child" or "last_child").
- * @param array  $inserted_block    The block to insert.
- * @return callable A function that accepts a block's content and returns the content with the inserted block.
- */
-function gutenberg_auto_insert_child_block( $relative_position, $inserted_block ) {
-	return function( $parsed_block ) use ( $relative_position, $inserted_block ) {
-		if ( 'first_child' === $relative_position ) {
-			array_unshift( $parsed_block['innerBlocks'], $inserted_block );
-			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
-			// when rendering blocks, we also need to prepend a value (`null`, to mark a block
-			// location) to that array.
-			array_unshift( $parsed_block['innerContent'], null );
-		} elseif ( 'last_child' === $relative_position ) {
-			array_push( $parsed_block['innerBlocks'], $inserted_block );
-			// Since WP_Block::render() iterates over `inner_content` (rather than `inner_blocks`)
-			// when rendering blocks, we also need to prepend a value (`null`, to mark a block
-			// location) to that array.
-			array_push( $parsed_block['innerContent'], null );
-		}
-		return $parsed_block;
-	};
-}
-
-/**
  * Return a function that auto-inserts blocks relative to a given block.
  *
  * @param string $anchor_block      The block to insert relative to.
@@ -217,8 +191,8 @@ function gutenberg_register_auto_inserted_blocks( $settings, $metadata ) {
 		// TODO: Remove the following in favor of the gutenberg_serialize_block filter above,
 		// once that is working for child blocks on the frontend.
 		if ( 'first_child' === $mapped_position || 'last_child' === $mapped_position ) {
-			$inserter = gutenberg_auto_insert_child_block( $mapped_position, $inserted_block );
-			add_filter( "render_block_data_$block_name", $inserter, 10, 2 );
+			$inserter = gutenberg_auto_insert_block( $block_name, $mapped_position, $inserted_block );
+			add_filter( "render_block_data", $inserter, 10, 1 );
 		}
 		$settings['auto_insert'][ $block_name ] = $mapped_position;
 	}
@@ -226,23 +200,6 @@ function gutenberg_register_auto_inserted_blocks( $settings, $metadata ) {
 	return $settings;
 }
 add_filter( 'block_type_metadata_settings', 'gutenberg_register_auto_inserted_blocks', 10, 2 );
-
-function gutenberg_apply_render_block_data_block_type_filter( $parsed_block, $source_block, $parent_block ) {
-	$block_name = $parsed_block['blockName'];
-	/**
-	 * Filters the block being rendered in render_block(), before it's processed.
-	 *
-	 * The dynamic portion of the hook name, `$name`, refers to
-	 * the block name, e.g. "core/paragraph".
-	 *
-	 * @param array         $parsed_block The block being rendered.
-	 * @param array         $source_block An un-modified copy of $parsed_block, as it appeared in the source content.
-	 * @param WP_Block|null $parent_block If this is a nested block, a reference to the parent block.
-	 */
-	$parsed_block = apply_filters( "render_block_data_$block_name", $parsed_block, $source_block, $parent_block );
-	return $parsed_block;
-}
-add_filter( 'render_block_data', 'gutenberg_apply_render_block_data_block_type_filter', 15, 3 );
 
 function gutenberg_parse_and_serialize_block_templates( $query_result, $query, $template_type )  {
 	foreach( $query_result as $block_template ) {
