@@ -62,7 +62,42 @@ const LAYOUT = {
 
 const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
 
+function SiteEditorCanvas( {
+	children,
+	settings,
+	contentRef,
+	enableResizing,
+	isViewMode,
+} ) {
+	const [ resizeObserver, sizes ] = useResizeObserver();
+
+	const mergedRefs = useMergeRefs( [
+		contentRef,
+		useClipboardHandler(),
+		useTypingObserver(),
+		usePageContentFocusNotifications(),
+	] );
+
+	return (
+		<ResizableEditor
+			enableResizing={ enableResizing }
+			height={ sizes.height ?? '100%' }
+		>
+			<EditorCanvas
+				enableResizing={ enableResizing }
+				settings={ settings }
+				contentRef={ mergedRefs }
+				readonly={ isViewMode }
+			>
+				{ resizeObserver }
+				{ children }
+			</EditorCanvas>
+		</ResizableEditor>
+	);
+}
+
 export default function BlockEditor() {
+	const contentRef = useRef();
 	const { templateType, canvasMode, hasPageContentFocus } = useSelect(
 		( select ) => {
 			const {
@@ -96,15 +131,7 @@ export default function BlockEditor() {
 
 	const settings = useSiteEditorSettings( templateType );
 
-	const contentRef = useRef();
-	const mergedRefs = useMergeRefs( [
-		contentRef,
-		useClipboardHandler(),
-		useTypingObserver(),
-		usePageContentFocusNotifications(),
-	] );
 	const isMobileViewport = useViewportMatch( 'small', '<' );
-	const [ resizeObserver, sizes ] = useResizeObserver();
 
 	const isFocusMode = FOCUSABLE_ENTITIES.includes( templateType );
 
@@ -158,30 +185,24 @@ export default function BlockEditor() {
 						>
 							<BlockEditorKeyboardShortcuts.Register />
 							<BackButton />
-							<ResizableEditor
+							<SiteEditorCanvas
+								contentRef={ contentRef }
+								isViewMode={ isViewMode }
+								settings={ settings }
 								enableResizing={ enableResizing }
-								height={ sizes.height ?? '100%' }
 							>
-								<EditorCanvas
-									enableResizing={ enableResizing }
-									settings={ settings }
-									contentRef={ mergedRefs }
-									readonly={ canvasMode === 'view' }
-								>
-									{ resizeObserver }
-									<BlockList
-										className={ classnames(
-											'edit-site-block-editor__block-list wp-site-blocks',
-											{
-												'is-navigation-block':
-													isTemplateTypeNavigation,
-											}
-										) }
-										__experimentalLayout={ LAYOUT }
-										renderAppender={ showBlockAppender }
-									/>
-								</EditorCanvas>
-							</ResizableEditor>
+								<BlockList
+									className={ classnames(
+										'edit-site-block-editor__block-list wp-site-blocks',
+										{
+											'is-navigation-block':
+												isTemplateTypeNavigation,
+										}
+									) }
+									__experimentalLayout={ LAYOUT }
+									renderAppender={ showBlockAppender }
+								/>
+							</SiteEditorCanvas>
 						</BlockTools>
 					)
 				}
