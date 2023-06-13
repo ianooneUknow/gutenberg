@@ -44,7 +44,7 @@ export default function BlockEditor() {
 	const BlockEditorComponent = getBlockEditorComponent( templateType );
 
 	return (
-		<BlockEditorComponent templateType={ templateType }>
+		<BlockEditorComponent>
 			{ hasPageContentFocus && <DisableNonPageContentBlocks /> }
 			<TemplatePartConverter />
 			<SidebarInspectorFill>
