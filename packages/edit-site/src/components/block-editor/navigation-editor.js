@@ -1,65 +1,45 @@
 /**
  * WordPress dependencies
  */
-import { createBlock } from '@wordpress/blocks';
-import { useMemo, useEffect } from '@wordpress/element';
-import { useDispatch } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 
 /**
  * Internal dependencies
  */
+import { store as editSiteStore } from '../../store';
 import { unlock } from '../../lock-unlock';
 
-/**
- * Returns custom block editor state for navigation entities.
- *
- * Note: Navigation entities require a wrapping Navigation block to provide
- * them with some basic layout and styling. Therefore we create a "ghost" block
- * and provide it will a reference to the navigation entity ID being edited.
- *
- * In this scenario it is the **block** that handles syncing the entity content
- * whereas for other entities this is handled by entity block editor.
- *
- * @param {number} navigationMenuId the navigation menu ID
- * @return {[WPBlock[], Function, Function]} The block array and setters.
- */
-export function useNavigationBlockEditor( navigationMenuId ) {
-	const noop = () => {};
-	const wrappedBlocks = useMemo( () => {
-		return [
-			createBlock( 'core/navigation', {
-				ref: navigationMenuId,
-				// As the parent editor is locked with `templateLock`, the template locking
-				// must be explicitly "unset" on the block itself to allow the user to modify
-				// the block's content.
-				templateLock: false,
-			} ),
-		];
-	}, [ navigationMenuId ] );
-
-	return [ wrappedBlocks, noop, noop ];
-}
+const FOCUSABLE_ENTITIES = [ 'wp_template_part', 'wp_navigation' ];
 
 /**
  * Wrapper for Navigation focus mode specific block editor.
  *
- * @param {Object}  options
- * @param {string}  options.templateType the template type of the current view
- * @param {Array}   options.blocks       the blocks in the editor
- * @param {boolean} options.isEditMode   whether the editor is in edit mode
+ * @param {Object} options
+ * @param {string} options.templateType the template type of the current view
  */
-export function useNavigationFocusMode( { templateType, blocks, isEditMode } ) {
+export function useNavigationFocusMode( { templateType } ) {
 	const isNavigationFocusMode = templateType === 'wp_navigation';
-	const navigationBlockClientId = blocks[ 0 ]?.clientId;
+	const { isEditMode } = useSiteEditorMode();
 
 	const { selectBlock, setBlockEditingMode, unsetBlockEditingMode } = unlock(
 		useDispatch( blockEditorStore )
 	);
 
+	// Get the blocks directly from the block editor store.
+	const { blocks } = useSelect( ( select ) => {
+		const { getBlocks } = select( blockEditorStore );
+		return {
+			blocks: getBlocks(),
+		};
+	}, [] );
+
+	const navigationBlockClientId = blocks[ 0 ]?.clientId;
+
 	// Auto-select the Navigation block when entering Navigation focus mode.
 	useEffect( () => {
-		if ( isEditMode && isNavigationFocusMode ) {
+		if ( navigationBlockClientId && isEditMode && isNavigationFocusMode ) {
 			selectBlock( navigationBlockClientId );
 		}
 	}, [
@@ -73,6 +53,10 @@ export function useNavigationFocusMode( { templateType, blocks, isEditMode } ) {
 	// This ensures that non-content controls on the block will be hidden and thus
 	// the user can focus on editing the Navigation Menu content only.
 	useEffect( () => {
+		if ( ! navigationBlockClientId ) {
+			return;
+		}
+
 		if ( isNavigationFocusMode ) {
 			setBlockEditingMode( navigationBlockClientId, 'contentOnly' );
 		}
@@ -86,4 +70,23 @@ export function useNavigationFocusMode( { templateType, blocks, isEditMode } ) {
 		unsetBlockEditingMode,
 		setBlockEditingMode,
 	] );
+}
+
+function useSiteEditorMode() {
+	const { templateType, canvasMode } = useSelect( ( select ) => {
+		const { getEditedPostType, getCanvasMode } = unlock(
+			select( editSiteStore )
+		);
+
+		return {
+			templateType: getEditedPostType(),
+			canvasMode: getCanvasMode(),
+		};
+	}, [] );
+
+	return {
+		isFocusMode: FOCUSABLE_ENTITIES.includes( templateType ),
+		isViewMode: canvasMode === 'view',
+		isEditMode: canvasMode === 'edit',
+	};
 }
